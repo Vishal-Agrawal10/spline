@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 
-package splinescarango
+package co.za.absa.spline.persistence
 
 import java.net.URI
 import java.util.UUID
 import java.util.UUID.randomUUID
 
+import com.arangodb.ArangoDatabase
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FunSpec, Matchers}
 import za.co.absa.spline.model.arango._
 import za.co.absa.spline.model.dt.Simple
 import za.co.absa.spline.model.op.{BatchRead, BatchWrite, Generic, OperationProps}
 import za.co.absa.spline.model.{DataLineage, MetaDataSource, MetaDataset}
-import za.co.absa.spline.persistence.Persister
+import za.co.absa.spline.persistence.{ArangoFactory, ArangoInit, Persister}
 import za.co.absa.spline.{model => splinemodel}
 
 import scala.concurrent.duration.Duration
@@ -36,14 +37,15 @@ import scala.util.Try
 
 class PersisterSpec extends FunSpec with Matchers with MockitoSugar {
 
-  val arangoUri = "http://root:root@localhost:8529/_system"
+  val arangoUri = "http://root:root@localhost:8529/unit-test"
 
   describe("Persister") {
 
     it("Persister should be able to insert an example lineage to an empty database") {
-      val database = Database(new URI(arangoUri))
-      Try(awaitForever(database.delete(true)))
-      awaitForever(database.init(force = true))
+      val db = ArangoFactory.create(new URI(arangoUri))
+      Try(db.drop())
+      db.create()
+      ArangoInit.initialize(db)
       val persister = new Persister(arangoUri)
       awaitForever(persister.save(datalineage()))
     }
@@ -98,7 +100,5 @@ class PersisterSpec extends FunSpec with Matchers with MockitoSugar {
         dataTypes
       )
     }
-
-
 
 }

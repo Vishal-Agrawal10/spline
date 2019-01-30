@@ -19,26 +19,25 @@ package za.co.absa.spline.persistence
 import java.net.URI
 import java.security.MessageDigest
 
-import com.arangodb.ArangoDB
 import com.arangodb.model.TransactionOptions
 import io.circe.ObjectEncoder
+import io.circe.generic.semiauto.deriveEncoder
 import org.apache.commons.lang.builder.ToStringBuilder.reflectionToString
+import za.co.absa.spline.model.arango._
 import za.co.absa.spline.model.op.BatchWrite
 import za.co.absa.spline.model.{DataLineage, MetaDataset, op}
-import za.co.absa.spline.model.arango._
 import za.co.absa.spline.{model => splinemodel}
-import io.circe.generic.semiauto.deriveEncoder
 // import needed for decoder creation
 import com.outr.arango.managed._
+import java.lang.Iterable
 
+import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.collection.JavaConverters._
-import java.lang.Iterable
 
 class Persister(arangoUri: String) {
 
-  val database = Database(new URI(arangoUri))
+  private val db = ArangoFactory.create(new URI(arangoUri))
 
   case class TransactionParams(
     operation: Iterable[String],
@@ -87,11 +86,6 @@ class Persister(arangoUri: String) {
       createProgressForBatchJob(dataLineage).asJava,
       createProgressOf(dataLineage).asJava
     )
-    val db = new ArangoDB.Builder()
-      .user("root")
-      .password("root")
-      .build()
-      .db("_system")
     val options = new TransactionOptions()
       .params(params) // Serialized hash map with json string values.
       .writeCollections(params.fields: _*)
